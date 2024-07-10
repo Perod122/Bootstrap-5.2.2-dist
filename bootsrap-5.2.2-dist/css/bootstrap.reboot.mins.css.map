@@ -610,6 +610,84 @@ if(!$conn){
 }
 
 ?>
+#FILTER REPORT BY CAMPUS
+<?php
+    include 'dbconn.php';
+
+    $message ='';
+    $numRegistrants = 0;
+    $numAttendees = 0;
+    $totalCollection = 0;
+    
+    if($_SERVER['REQUEST_METHOD'] == 'POST') {
+        $campuses = $_POST['campus'] ?? [];
+        if ($campuses) {
+            $campusFilter = implode("','", $campuses);
+            $students = $conn->query("SELECT * FROM registration WHERE campus IN ('$campusFilter')");
+            $numRegistrants = $students->num_rows;
+
+            while ($row = $students->fetch_assoc()){
+                $totalCollection += $row['amountPaid'];
+                if ($row['attended'] === 'yes') {
+                    $numAttendees++;
+                }
+            }
+        } else {
+            $message = 'Please select atleast one campus.';
+        }
+    }
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report by Campus</title>
+</head>
+<body>
+    <h1>Report by Campus</h1>
+    <form action="" method="post">
+        <input type="checkbox" name="campus[]" value="Main">Main
+        <input type="checkbox" name="campus[]" value="LM">LM
+        <input type="checkbox" name="campus[]" value="Banilad">Banilad
+        <br><br>
+        <button type="submit">Generate Report</button>
+    </form>
+    <?php if ($message): ?>
+        <p><?php echo $message; ?></p>
+    <?php endif; ?>
+    <br>
+    <a href="index.php">Back to Menu</a>
+    <?php if($_SERVER['REQUEST_METHOD'] == 'POST' && !$message): ?>
+        <h2>Report</h2>
+        <table border="1">
+        <tr>
+            <th>ID No.</th>
+            <th>Name</th>
+            <th>Campus</th>
+            <th>Amount Paid</th>
+            <th>Attended</th>
+        </tr>
+        <?php $students->data_seek(0); ?>
+        <?php while ($row = $students->fetch_assoc()): ?>
+            <tr>
+                <td><?php echo $row['idNum']; ?></td>
+                <td><?php echo ucwords("{$row['studFName']} {$row['studLName']}"); ?></td>
+                <td><?php echo ucwords($row['campus']); ?></td>
+                <td><?php echo $row['amountPaid']; ?></td> 
+                <td><?php echo ucwords($row['attended']); ?></td>
+            </tr>
+        <?php endwhile; ?>
+        </table>
+        <p>Number of Registrants: <?php echo $numRegistrants; ?></p>
+        <p>Total Collection: <?php echo $totalCollection; ?></p>
+        <p>Number of Attendees: <?php echo $numAttendees; ?></p>
+        <p>Date Generated: <?php echo date('Y-m-d'); ?></p>
+    <?php endif; ?>
+</body>
+</html>
 
 #index.php
 <?php 
